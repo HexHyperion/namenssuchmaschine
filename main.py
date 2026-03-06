@@ -44,3 +44,4 @@ if __name__ == "__main__":
         for translation in row:
             print(f"{translation[0]} {AnsiColor.GREY}({translation[1]}){AnsiColor.CLEAR}".ljust(max_length + 10), end="")
         print()
+    print()
