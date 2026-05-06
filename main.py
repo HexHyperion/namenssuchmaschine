@@ -21,30 +21,30 @@ class AnsiColor:
 def print_progress():
     dots = 3
     delay = 0
+    global stop_threads
     while True:
-        if(delay % 6 == 0):
+        if delay % 6 == 0:
             if dots < 3:
                 dots += 1
             else:
                 dots = 1
-        print(
-            f"\r{AnsiColor.CYAN}Translating, this may take a while️{"." * dots}{" " * (3 - dots)}{AnsiColor.CLEAR} {AnsiColor.GREY}({len(translations)}/{len(languages)}){AnsiColor.CLEAR}",
-            end="")
-        global stop_threads
+        print(f"\r{AnsiColor.CYAN}Translating, this may take a while️{"." * dots}{" " * (3 - dots)}{AnsiColor.CLEAR} "
+              f"{AnsiColor.GREY}({len(word_translations)}/{len(languages)}){AnsiColor.CLEAR}", end="")
         if stop_threads:
             break
         time.sleep(0.1)
         delay += 1
 
-def download_translations(word, translations):
+def fetch_translations(word, translations):
     for code, language in languages:
         try:
-            result = deepl_client.translate_text(to_translate, target_lang=code, source_lang="EN")
+            result = deepl_client.translate_text(word, target_lang=code, source_lang="EN")
             translations.append((result.text, language))
 
         except Exception as e:
             print()
-            print(f"{AnsiColor.RED}Error translating to {language}: {e}{AnsiColor.CLEAR}", end="")
+            print(f"{AnsiColor.RED}Error translating to {language}: {e}{AnsiColor.CLEAR}")
+
 
 if __name__ == "__main__":
     load_dotenv()
@@ -52,29 +52,29 @@ if __name__ == "__main__":
     deepl_client = deepl.DeepLClient(auth_key)
 
     print(f"{AnsiColor.HEADER}{AnsiColor.BOLD}Programmierungsprojektsnamenssuchmaschine{AnsiColor.CLEAR}")
-    to_translate = input(f"{AnsiColor.GREY}Expression in English: {AnsiColor.CLEAR}")
-    print(f"{AnsiColor.CYAN}Translating, this may take a while️... {AnsiColor.CLEAR} {AnsiColor.GREY}(0/{len(languages)}){AnsiColor.CLEAR}", end="")
+    word_to_translate = input(f"{AnsiColor.GREY}Expression in English: {AnsiColor.CLEAR}")
+    print(f"{AnsiColor.CYAN}Translating, this may take a while️... {AnsiColor.CLEAR} "
+          f"{AnsiColor.GREY}(0/{len(languages)}){AnsiColor.CLEAR}", end="")
 
-    translations = []
+    word_translations = []
     stop_threads = False
 
-    translationThread = threading.Thread(target=download_translations, args=(to_translate, translations))
-    printThread = threading.Thread(target=print_progress)
+    translation_thread = threading.Thread(target=fetch_translations, args=(word_to_translate, word_translations))
+    output_thread = threading.Thread(target=print_progress)
 
-    translationThread.start()
-    printThread.start()
+    translation_thread.start()
+    output_thread.start()
 
-    translationThread.join()
+    translation_thread.join()
     stop_threads = True
-    printThread.join()
+    output_thread.join()
 
-    translations.sort(key=lambda x: x[1], reverse=False)
-    max_length = max(len(f"{translation[0]} ({translation[1]})") for translation in translations)
+    word_translations.sort(key=lambda x: x[1], reverse=False)
+    max_length = max(len(f"{translation[0]} ({translation[1]})") for translation in word_translations)
 
-    print()
-    for i in range(0, len(translations), 3):
-        row = translations[i:i+3]
+    print("\n")
+    for i in range(0, len(word_translations), 3):
+        row = word_translations[i:i+3]
         for translation in row:
             print(f"{translation[0]} {AnsiColor.GREY}({translation[1]}){AnsiColor.CLEAR}".ljust(max_length + 10), end="")
         print()
-    print()
