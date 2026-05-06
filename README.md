@@ -5,5 +5,5 @@ Or, in other words, a program to help you find a creative name for a boring proj
 ## Usage
 1. Install the latest version of Python on your machine
 2. Create an `.env` file with your `DEEPL_API_KEY` in the same directory as the script
-3. Install the DeepL library with `pip install deepl`
+3. Install the dependencies with `pip install deepl dotenv`
 4. Run the program with `python main.py`
