@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     print(f"{AnsiColor.HEADER}{AnsiColor.BOLD}Programmierungsprojektsnamenssuchmaschine{AnsiColor.CLEAR}")
     word_to_translate = input(f"{AnsiColor.GREY}Expression in English: {AnsiColor.CLEAR}")
-    print(f"{AnsiColor.CYAN}Translating, this may take a while️... {AnsiColor.CLEAR} "
+    print(f"{AnsiColor.CYAN}Translating, this may take a while... {AnsiColor.CLEAR} "
           f"{AnsiColor.GREY}(0/{len(languages)}){AnsiColor.CLEAR}", end="")
 
     word_translations = []
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     word_translations.sort(key=lambda x: x[1], reverse=False)
     max_length = max(len(f"{translation[0]} ({translation[1]})") for translation in word_translations)
 
-    print("\n")
+    print()
     for i in range(0, len(word_translations), 3):
         row = word_translations[i:i+3]
         for translation in row:
