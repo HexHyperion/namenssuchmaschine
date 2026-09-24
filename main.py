@@ -5,6 +5,8 @@ from languages import languages
 import threading
 import time
 
+thread_limit = 4
+
 class AnsiColor:
     HEADER = "\033[95m"
     BLUE = "\033[94m"
@@ -21,7 +23,8 @@ class AnsiColor:
 def print_progress():
     dots = 3
     delay = 0
-    while True:
+    global stop_threads
+    while not stop_threads:
         if(delay % 6 == 0):
             if dots < 3:
                 dots += 1
@@ -30,21 +33,34 @@ def print_progress():
         print(
             f"\r{AnsiColor.CYAN}Translating, this may take a while️{"." * dots}{" " * (3 - dots)}{AnsiColor.CLEAR} {AnsiColor.GREY}({len(translations)}/{len(languages)}){AnsiColor.CLEAR}",
             end="")
-        global stop_threads
-        if stop_threads:
-            break
         time.sleep(0.1)
         delay += 1
 
 def download_translations(word, translations):
-    for code, language in languages:
-        try:
-            result = deepl_client.translate_text(to_translate, target_lang=code, source_lang="EN")
-            translations.append((result.text, language))
+    global thread_limit
+    languages_list = list(languages)
+    current_language = 0
+    while current_language < len(languages):
+        threads = []
+        batch = languages_list[current_language: current_language + thread_limit]
+        for language in batch:
+            t = threading.Thread(target=download_translation, args=(word, translations, language))
+            t.start()
+            threads.append(t)
+        for t in threads:
+            t.join()
+        current_language += 4
 
-        except Exception as e:
-            print()
-            print(f"{AnsiColor.RED}Error translating to {language}: {e}{AnsiColor.CLEAR}", end="")
+
+def download_translation(word, translations, language):
+    code, language = language
+    try:
+        result = deepl_client.translate_text(to_translate, target_lang=code, source_lang="EN")
+        translations.append((result.text, language))
+
+    except Exception as e:
+        print()
+        print(f"{AnsiColor.RED}Error translating to {language}: {e}{AnsiColor.CLEAR}", end="")
 
 if __name__ == "__main__":
     load_dotenv()
