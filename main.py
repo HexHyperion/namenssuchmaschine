@@ -5,6 +5,8 @@ from languages import languages
 import threading
 import time
 
+thread_limit = 3
+
 class AnsiColor:
     HEADER = "\033[95m"
     BLUE = "\033[94m"
@@ -36,15 +38,30 @@ def print_progress():
         delay += 1
 
 def fetch_translations(word, translations):
-    for code, language in languages:
-        try:
-            result = deepl_client.translate_text(word, target_lang=code, source_lang="EN")
-            translations.append((result.text, language))
+    global thread_limit
+    languages_list = list(languages)
+    current_language = 0
+    while current_language < len(languages):
+        threads = []
+        batch = languages_list[current_language: current_language + thread_limit]
+        for language in batch:
+            t = threading.Thread(target=fetch_translation, args=(word, translations, language))
+            t.start()
+            threads.append(t)
+        for t in threads:
+            t.join()
+        current_language += thread_limit
 
-        except Exception as e:
-            print()
-            print(f"{AnsiColor.RED}Error translating to {language}: {e}{AnsiColor.CLEAR}")
 
+def fetch_translation(word, translations, language):
+    code, language = language
+    try:
+        result = deepl_client.translate_text(word, target_lang=code, source_lang="EN")
+        translations.append((result.text, language))
+
+    except Exception as e:
+        print()
+        print(f"{AnsiColor.RED}Error translating to {language}: {e}{AnsiColor.CLEAR}", end="")
 
 if __name__ == "__main__":
     load_dotenv()
