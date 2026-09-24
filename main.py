@@ -50,7 +50,7 @@ def fetch_translations(word, translations):
             threads.append(t)
         for t in threads:
             t.join()
-        current_language += 4
+        current_language += thread_limit
 
 
 def fetch_translation(word, translations, language):
