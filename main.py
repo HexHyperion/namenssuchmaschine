@@ -5,7 +5,7 @@ from languages import languages
 import threading
 import time
 
-thread_limit = 4
+thread_limit = 3
 
 class AnsiColor:
     HEADER = "\033[95m"
@@ -24,19 +24,20 @@ def print_progress():
     dots = 3
     delay = 0
     global stop_threads
-    while not stop_threads:
-        if(delay % 6 == 0):
+    while True:
+        if delay % 6 == 0:
             if dots < 3:
                 dots += 1
             else:
                 dots = 1
-        print(
-            f"\r{AnsiColor.CYAN}Translating, this may take a while️{"." * dots}{" " * (3 - dots)}{AnsiColor.CLEAR} {AnsiColor.GREY}({len(translations)}/{len(languages)}){AnsiColor.CLEAR}",
-            end="")
+        print(f"\r{AnsiColor.CYAN}Translating, this may take a while️{"." * dots}{" " * (3 - dots)}{AnsiColor.CLEAR} "
+              f"{AnsiColor.GREY}({len(word_translations)}/{len(languages)}){AnsiColor.CLEAR}", end="")
+        if stop_threads:
+            break
         time.sleep(0.1)
         delay += 1
 
-def download_translations(word, translations):
+def fetch_translations(word, translations):
     global thread_limit
     languages_list = list(languages)
     current_language = 0
@@ -44,7 +45,7 @@ def download_translations(word, translations):
         threads = []
         batch = languages_list[current_language: current_language + thread_limit]
         for language in batch:
-            t = threading.Thread(target=download_translation, args=(word, translations, language))
+            t = threading.Thread(target=fetch_translation, args=(word, translations, language))
             t.start()
             threads.append(t)
         for t in threads:
@@ -52,10 +53,10 @@ def download_translations(word, translations):
         current_language += 4
 
 
-def download_translation(word, translations, language):
+def fetch_translation(word, translations, language):
     code, language = language
     try:
-        result = deepl_client.translate_text(to_translate, target_lang=code, source_lang="EN")
+        result = deepl_client.translate_text(word, target_lang=code, source_lang="EN")
         translations.append((result.text, language))
 
     except Exception as e:
@@ -68,29 +69,29 @@ if __name__ == "__main__":
     deepl_client = deepl.DeepLClient(auth_key)
 
     print(f"{AnsiColor.HEADER}{AnsiColor.BOLD}Programmierungsprojektsnamenssuchmaschine{AnsiColor.CLEAR}")
-    to_translate = input(f"{AnsiColor.GREY}Expression in English: {AnsiColor.CLEAR}")
-    print(f"{AnsiColor.CYAN}Translating, this may take a while️... {AnsiColor.CLEAR} {AnsiColor.GREY}(0/{len(languages)}){AnsiColor.CLEAR}", end="")
+    word_to_translate = input(f"{AnsiColor.GREY}Expression in English: {AnsiColor.CLEAR}")
+    print(f"{AnsiColor.CYAN}Translating, this may take a while... {AnsiColor.CLEAR} "
+          f"{AnsiColor.GREY}(0/{len(languages)}){AnsiColor.CLEAR}", end="")
 
-    translations = []
+    word_translations = []
     stop_threads = False
 
-    translationThread = threading.Thread(target=download_translations, args=(to_translate, translations))
-    printThread = threading.Thread(target=print_progress)
+    translation_thread = threading.Thread(target=fetch_translations, args=(word_to_translate, word_translations))
+    output_thread = threading.Thread(target=print_progress)
 
-    translationThread.start()
-    printThread.start()
+    translation_thread.start()
+    output_thread.start()
 
-    translationThread.join()
+    translation_thread.join()
     stop_threads = True
-    printThread.join()
+    output_thread.join()
 
-    translations.sort(key=lambda x: x[1], reverse=False)
-    max_length = max(len(f"{translation[0]} ({translation[1]})") for translation in translations)
+    word_translations.sort(key=lambda x: x[1], reverse=False)
+    max_length = max(len(f"{translation[0]} ({translation[1]})") for translation in word_translations)
 
     print()
-    for i in range(0, len(translations), 3):
-        row = translations[i:i+3]
+    for i in range(0, len(word_translations), 3):
+        row = word_translations[i:i+3]
         for translation in row:
             print(f"{translation[0]} {AnsiColor.GREY}({translation[1]}){AnsiColor.CLEAR}".ljust(max_length + 10), end="")
         print()
-    print()
